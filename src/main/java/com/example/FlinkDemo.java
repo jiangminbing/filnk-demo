@@ -1,30 +1,48 @@
-//package com.example;
-//
-//import javafx.scene.control.Alert;
-//import org.apache.flink.api.common.serialization.SimpleStringSchema;
-//import org.apache.flink.shaded.zookeeper3.org.apache.zookeeper.Transaction;
-//import org.apache.flink.streaming.api.TimeCharacteristic;
-//import org.apache.flink.streaming.api.datastream.DataStream;
-//import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
-//import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer;
-//
-//import java.util.Properties;
-//
-///**
-// * @author jiangmb
-// * @version 1.0.0
-// * @date 2021-07-05 17:25
-// */
-//public class FlinkDemo {
-//    public static void main(String[] args) {
-//        final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
-//        env.enableCheckpointing(5000); // 非常关键，一定要设置启动检查点！！
-//
-//        Properties props = new Properties();
-//        props.setProperty("bootstrap.servers", "localhost:9092");
-//        props.setProperty("group.id", "flink-group");
-//        FlinkKafkaConsumer consumer = new FlinkKafkaConsumer<>("test", new SimpleStringSchema(), props);
-//        DataStream<String> stream = env
-//                .addSource(consumer);
-//    }
-//}
+package com.example;
+
+import org.apache.flink.api.common.functions.FilterFunction;
+import org.apache.flink.streaming.api.datastream.DataStream;
+import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+
+/**
+ * @author jiangmb
+ * @version 1.0.0
+ * @date 2021-07-05 17:25
+ */
+public class FlinkDemo {
+    public static void main(String[] args) throws Exception {
+        // 对象处理
+        final StreamExecutionEnvironment env =
+                StreamExecutionEnvironment.getExecutionEnvironment();
+
+        DataStream<Person> flintstones = env.fromElements(
+                new Person("Fred", 35),
+                new Person("Wilma", 35),
+                new Person("Pebbles", 2));
+
+        DataStream<Person> adults = flintstones.filter(new FilterFunction<Person>() {
+            @Override
+            public boolean filter(Person person) throws Exception {
+                return person.age >= 18;
+            }
+        });
+
+        adults.print();
+
+        env.execute();
+    }
+    public static class Person {
+        public String name;
+        public Integer age;
+        public Person() {};
+
+        public Person(String name, Integer age) {
+            this.name = name;
+            this.age = age;
+        };
+
+        public String toString() {
+            return this.name.toString() + ": age " + this.age.toString();
+        };
+    }
+}
