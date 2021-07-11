@@ -1,21 +1,25 @@
 package com.example;
 
-import org.apache.flink.api.common.functions.FilterFunction;
-import org.apache.flink.api.common.functions.FlatMapFunction;
-import org.apache.flink.api.common.functions.MapFunction;
+import org.apache.flink.api.common.functions.*;
 import org.apache.flink.api.common.io.FilePathFilter;
 import org.apache.flink.api.common.serialization.SimpleStringSchema;
 import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.api.java.io.TextInputFormat;
 import org.apache.flink.api.java.tuple.Tuple2;
+import org.apache.flink.api.java.tuple.Tuple3;
+import org.apache.flink.api.java.typeutils.TupleTypeInfo;
 import org.apache.flink.core.fs.Path;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.IterativeStream;
+import org.apache.flink.streaming.api.datastream.WindowedStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.sink.SinkFunction;
 import org.apache.flink.streaming.api.functions.source.FileProcessingMode;
-import org.apache.flink.streaming.api.windowing.assigners.TumblingProcessingTimeWindows;
+import org.apache.flink.streaming.api.functions.windowing.WindowFunction;
+import org.apache.flink.streaming.api.windowing.assigners.*;
 import org.apache.flink.streaming.api.windowing.time.Time;
+import org.apache.flink.streaming.api.windowing.windows.TimeWindow;
+import org.apache.flink.streaming.api.windowing.windows.Window;
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer;
 import org.apache.flink.util.Collector;
 
@@ -30,7 +34,7 @@ import java.util.Properties;
 public class DateStreamApi {
     public static void main(String[] args) throws Exception {
 
-        StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+//        StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 //        DataStream<Tuple2<String, Integer>> dataStream = env
 //                .socketTextStream("localhost", 9999)
 //                .flatMap(new Splitter())
@@ -100,65 +104,47 @@ public class DateStreamApi {
         // 创建本地程序
         final StreamExecutionEnvironment env2 = StreamExecutionEnvironment.getExecutionEnvironment();
 
-//        DataStream<String> lines = env.fromElements("1","2","555");
+        DataStream<String> lines = env2.fromElements("1","2","555");
 
-//        // 数据转换 算子方法
-//        DataStream<Integer> d7 = lines.map(d->Integer.valueOf(d));
-//
-//        // 将结果切割转换
-//        lines.flatMap((FlatMapFunction<String, String>) (value, out) -> {
-//            for(String word: value.split(" ")){
-//                out.collect(word);
-//            }
-//        });
-//        // 过滤器
-//        DataStream d8 = lines.filter(d->d.length() < 7);
+        // 数据转换 算子方法
+        DataStream<Integer> d7 = lines.map(d->Integer.valueOf(d));
 
-        // 将相同键分到相同区
-        DataStream<Person> personDateStream = env2.fromElements(new Person("zhang",1),
-                new Person("jiang",5),new Person("zhang",1));
-        personDateStream.keyBy(p->p.getName()).sum("age").print();
+        // 将结果切割转换
+        lines.flatMap((FlatMapFunction<String, String>) (value, out) -> {
+            for(String word: value.split(" ")){
+                out.collect(word);
+            }
+        });
+        // 过滤器
+        DataStream d8 = lines.filter(d->d.length() < 7);
+
+
+
+        /**
+         * 流合并
+         */
+        DataStream<Tuple2<String,Integer>> dataStream1 = env2.fromCollection(Arrays.asList(new Tuple2("jiang",1),new Tuple2<>("min",2),new Tuple2<>("bing",3)));
+        DataStream<Tuple2<String,Integer>> dataStream2 = env2.fromCollection(Arrays.asList(new Tuple2("jiang",1),new Tuple2<>("min",2),new Tuple2<>("bing",3)));
+        dataStream1.union(dataStream1,dataStream2);
+        /**
+         * 流join select * from A inner join B on A.ID = B.ID
+         * 在一定的时间窗口内对数据进行求笛卡集
+         */
+        DataStream<Tuple2<String,Integer>> dataStream3 = env2.fromCollection(Arrays.asList(new Tuple2("jiang",1),new Tuple2<>("min",2),new Tuple2<>("bing",3)));
+        DataStream<Tuple2<String,Integer>> dataStream4 = env2.fromCollection(Arrays.asList(new Tuple2("jiang",1),new Tuple2<>("min",2),new Tuple2<>("bing",3)));
+        dataStream3.join(dataStream4)
+                .where(v->v.f0).equalTo(v->v.f0)
+                .window(TumblingProcessingTimeWindows.of(Time.seconds(5)))
+                .apply(new JoinFunction<Tuple2<String, Integer>, Tuple2<String, Integer>, Tuple3<String,Integer,Integer>>() {
+                    @Override
+                    public Tuple3<String, Integer, Integer> join(Tuple2<String, Integer> t1, Tuple2<String, Integer> t2) throws Exception {
+                        return new Tuple3(t1.f0+"-"+t2.f0,t1.f1,t2.f1);
+                    }
+                }).print();
+
+
         env2.execute();
 
-
-
-    }
-    public static class Person {
-        private String name;
-
-        private int age;
-
-        public String getName() {
-            return name;
-        }
-
-        public void setName(String name) {
-            this.name = name;
-        }
-
-        public int getAge() {
-            return age;
-        }
-
-        public void setAge(int age) {
-            this.age = age;
-        }
-
-        public Person(String name, int age) {
-            this.name = name;
-            this.age = age;
-        }
-
-        public Person() {
-        }
-
-        @Override
-        public String toString() {
-            return "Person{" +
-                    "name='" + name + '\'' +
-                    ", age=" + age +
-                    '}';
-        }
     }
 
     public static class Splitter implements FlatMapFunction<String, Tuple2<String, Integer>> {
