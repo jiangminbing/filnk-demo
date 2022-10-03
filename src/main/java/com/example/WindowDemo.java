@@ -11,6 +11,7 @@ import org.apache.flink.streaming.api.functions.windowing.ProcessWindowFunction;
 import org.apache.flink.streaming.api.functions.windowing.WindowFunction;
 import org.apache.flink.streaming.api.windowing.assigners.*;
 import org.apache.flink.streaming.api.windowing.time.Time;
+import org.apache.flink.streaming.api.windowing.triggers.CountTrigger;
 import org.apache.flink.streaming.api.windowing.windows.TimeWindow;
 import org.apache.flink.util.Collector;
 
@@ -107,6 +108,10 @@ public class WindowDemo {
                 .keyBy(t -> t.f0)
                 .window(TumblingEventTimeWindows.of(Time.minutes(5)))
                 .aggregate(new AverageAggregate3(),new MyProcessWindowFunction3());
+
+        input
+                .keyBy(t -> t.f0)
+                .window(TumblingEventTimeWindows.of(Time.minutes(5))).trigger(CountTrigger.of(100));
 
         env2.execute();
     }

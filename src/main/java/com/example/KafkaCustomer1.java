@@ -1,5 +1,6 @@
 package com.example;
 
+import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.api.common.serialization.SimpleStringSchema;
 import org.apache.flink.api.java.tuple.Tuple2;
@@ -13,6 +14,7 @@ import org.apache.flink.streaming.api.windowing.windows.TimeWindow;
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer;
 import org.apache.flink.util.Collector;
 
+import java.time.Duration;
 import java.util.Properties;
 
 /**
@@ -31,7 +33,8 @@ public class KafkaCustomer1 {
         props.setProperty("key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
         props.setProperty("value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
         props.setProperty("auto.offset.reset", "latest");
-        FlinkKafkaConsumer consumer = new FlinkKafkaConsumer<>("test1",new SimpleStringSchema(),  props);
+        FlinkKafkaConsumer consumer = new FlinkKafkaConsumer<>("test",new SimpleStringSchema(),  props);
+        consumer.assignTimestampsAndWatermarks(WatermarkStrategy.forBoundedOutOfOrderness(Duration.ofSeconds(20)));
         DataStream<String> stream = env
                 .addSource(consumer);
 //        stream.flatMap(new MyDemoLineSplitter()).keyBy(v->v.f0).window(TumblingProcessingTimeWindows.of(Time.seconds(5)))

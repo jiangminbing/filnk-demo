@@ -34,15 +34,15 @@ public class FlinkDemo1 {
                 .addSource(consumer)
                 .name("transactions");
 
-//        DataStream<Alert> alerts = transactions
-//                .keyBy(Transaction::getAccountId)
-//                .process(new FraudDetector())
-//                .name("fraud-detector");
+        DataStream<Alert> alerts = transactions
+                .keyBy(Transaction::getAccountId)
+                .process(new FraudDetector())
+                .name("fraud-detector");
 
         // 输出结果到sink
-//        alerts
-//                .addSink(new AlertSink())
-//                .name("send-alerts");
+        alerts
+                .addSink(new AlertSink())
+                .name("send-alerts");
 
         env.execute("Fraud Detection");
 

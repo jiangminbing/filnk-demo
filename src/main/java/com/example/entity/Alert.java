@@ -6,13 +6,13 @@ package com.example.entity;
  * @date 2021-07-05 18:44
  */
 public class Alert {
-    private Integer id;
+    private long id;
 
-    public Integer getId() {
+    public long getId() {
         return id;
     }
 
-    public void setId(Integer id) {
+    public void setId(long id) {
         this.id = id;
     }
 }

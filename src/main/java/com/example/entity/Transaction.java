@@ -6,15 +6,15 @@ package com.example.entity;
  * @date 2021-07-05 18:43
  */
 public class Transaction {
-    private Integer accountId;
+    private Long accountId;
 
     private Double amount;
 
-    public Integer getAccountId() {
+    public Long getAccountId() {
         return accountId;
     }
 
-    public void setAccountId(Integer accountId) {
+    public void setAccountId(Long accountId) {
         this.accountId = accountId;
     }
 

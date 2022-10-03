@@ -38,7 +38,8 @@ public class KafkaCustomer {
         props.setProperty("key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
         props.setProperty("value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
         props.setProperty("auto.offset.reset", "latest");
-        FlinkKafkaConsumer consumer = new FlinkKafkaConsumer<>("test",new SimpleStringSchema(),  props);
+        FlinkKafkaConsumer consumer = new FlinkKafkaConsumer<>("tbox_period_A26",new SimpleStringSchema(),  props);
+
         DataStream<String> stream = env
                 .addSource(consumer);
         SingleOutputStreamOperator<Tuple2<String,Integer>> operator = stream.flatMap(new LineSplitter()).
